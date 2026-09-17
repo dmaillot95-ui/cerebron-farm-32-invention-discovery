@@ -1,14 +1,11 @@
 import json
 import os
-import urllib.request
-import urllib.error
 from pathlib import Path
+from gradio_client import Client
 
 role = os.environ["ROLE"]
-model = os.environ.get("MODEL", "openai/gpt-4o")
+space = os.environ.get("MODEL", "huggingface-projects/llama-3.2-3B-Instruct")
 focus = os.environ.get("FOCUS", "invention discovery")
-token = os.environ.get("GITHUB_TOKEN", "")
-endpoint = "https://models.github.ai/inference/chat/completions"
 
 prompt = f"""
 You are role {role} in CEREBRON Omega Farm 32 Invention Discovery.
@@ -25,62 +22,38 @@ Return a concise but technically useful report.
 
 out = {
     "role": role,
-    "model": model,
+    "model": space,
     "focus": focus,
-    "provider": "github-models",
-    "endpoint": endpoint,
+    "provider": "huggingface-space-zerogpu",
+    "api_name": "/generate",
     "inference_success": False,
     "status": "EXTERNAL_INFERENCE_FAILED",
 }
 
 try:
-    if not token:
-        raise RuntimeError("GITHUB_TOKEN missing")
-
-    payload = json.dumps({
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "CLAIM <= EVIDENCE. UNKNOWN REMAINS UNKNOWN. VERIFY BEFORE COMMIT."},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.4,
-        "max_tokens": 1200,
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        endpoint,
-        data=payload,
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        },
+    client = Client(space)
+    # Gradio 6 ChatInterface defaults to the function name. Both selected
+    # public Spaces use fn=generate(message, history, max_new_tokens,
+    # temperature, top_p, top_k, repetition_penalty).
+    answer = client.predict(
+        prompt,
+        [],
+        512,
+        0.4,
+        0.9,
+        50,
+        1.15,
+        api_name="/generate",
     )
-
-    with urllib.request.urlopen(req, timeout=120) as response:
-        body = json.loads(response.read().decode("utf-8"))
-
-    choices = body.get("choices") or []
-    answer = ""
-    if choices:
-        answer = ((choices[0].get("message") or {}).get("content") or "").strip()
-
-    if not answer:
-        raise RuntimeError(f"Model returned no text; keys={sorted(body.keys())}")
-
+    if isinstance(answer, (list, tuple)):
+        text = "\n".join(str(x) for x in answer if x is not None).strip()
+    else:
+        text = str(answer or "").strip()
+    if not text:
+        raise RuntimeError("External model returned empty output")
     out["inference_success"] = True
     out["status"] = "UNREVIEWED_EXTERNAL_AGENT_OUTPUT"
-    out["output"] = answer
-    out["response_id"] = body.get("id")
-    out["usage"] = body.get("usage")
-
-except urllib.error.HTTPError as exc:
-    try:
-        detail = exc.read().decode("utf-8", errors="replace")[:2000]
-    except Exception:
-        detail = ""
-    out["error"] = f"HTTPError({exc.code}): {detail}"
+    out["output"] = text
 except Exception as exc:
     out["error"] = repr(exc)
 
@@ -91,7 +64,7 @@ Path(f"results/{role}.json").write_text(
 
 print(json.dumps({
     "role": role,
-    "model": model,
+    "model": space,
     "status": out["status"],
     "inference_success": out["inference_success"],
 }, ensure_ascii=False))

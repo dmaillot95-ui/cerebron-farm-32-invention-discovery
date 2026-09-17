@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  models: read
 
 jobs:
   agents:
@@ -17,38 +16,39 @@ jobs:
       max-parallel: 4
       matrix:
         include:
-          - {role: PROBLEM_DISCOVERY_SPECIALIST, model: openai/gpt-4o, focus: unmet needs bottlenecks contradictions}
-          - {role: MECHANISM_INVENTOR, model: openai/gpt-4.1, focus: physical computational biological mechanisms}
-          - {role: CROSS_DOMAIN_TRANSFER_SPECIALIST, model: openai/gpt-4o, focus: transfer mechanisms across domains}
-          - {role: CONTRADICTION_MINER, model: openai/gpt-4.1, focus: contradictions anomalies unresolved tradeoffs}
-          - {role: BIOMIMICRY_INVENTOR, model: openai/gpt-4o, focus: biological principles translated into engineering}
-          - {role: ARCHITECTURE_SYNTHESIS_SPECIALIST, model: openai/gpt-4.1, focus: system architectures interfaces modularity}
-          - {role: MATERIAL_PROCESS_INVENTOR, model: openai/gpt-4o, focus: materials processes manufacturing concepts}
-          - {role: ALGORITHM_INVENTOR, model: openai/gpt-4.1, focus: algorithms optimization representations}
-          - {role: SYSTEMS_INVENTOR, model: openai/gpt-4o, focus: integrated system inventions}
-          - {role: SIMPLIFICATION_ENGINEER, model: openai/gpt-4.1, focus: remove complexity preserve capability}
-          - {role: FEASIBILITY_AUDITOR, model: openai/gpt-4o, focus: physics engineering resource feasibility}
-          - {role: MANUFACTURABILITY_AUDITOR, model: openai/gpt-4.1, focus: fabrication supply chain maintainability}
-          - {role: VALUE_ECONOMICS_AUDITOR, model: openai/gpt-4o, focus: value cost adoption economic constraints}
-          - {role: SAFETY_FAILURE_AUDITOR, model: openai/gpt-4.1, focus: hazards failure modes unintended consequences}
-          - {role: EXPERIMENT_DESIGNER, model: openai/gpt-4o, focus: minimum decisive tests falsification}
-          - {role: NOVELTY_PRIOR_ART_STYLE_AUDITOR, model: openai/gpt-4.1, focus: conceptual novelty collision risks without legal claims}
-          - {role: DISCOVERY_HYPOTHESIS_GENERATOR, model: openai/gpt-4o, focus: testable scientific discovery hypotheses}
-          - {role: RED_TEAM_INVENTION, model: openai/gpt-4.1, focus: destroy weak ideas expose hidden assumptions}
-          - {role: INDEPENDENT_REPLICATOR, model: openai/gpt-4o, focus: independently reproduce reasoning and candidate ranking}
-          - {role: OMEGA_INVENTION_DISCOVERY_JUDGE, model: openai/gpt-4.1, focus: evidence bounded synthesis unresolved unknowns}
+          - {role: PROBLEM_DISCOVERY_SPECIALIST, model: huggingface-projects/llama-3.2-3B-Instruct, focus: unmet needs bottlenecks contradictions}
+          - {role: MECHANISM_INVENTOR, model: huggingface-projects/gemma-2-9b-it, focus: physical computational biological mechanisms}
+          - {role: CROSS_DOMAIN_TRANSFER_SPECIALIST, model: huggingface-projects/llama-3.2-3B-Instruct, focus: transfer mechanisms across domains}
+          - {role: CONTRADICTION_MINER, model: huggingface-projects/gemma-2-9b-it, focus: contradictions anomalies unresolved tradeoffs}
+          - {role: BIOMIMICRY_INVENTOR, model: huggingface-projects/llama-3.2-3B-Instruct, focus: biological principles translated into engineering}
+          - {role: ARCHITECTURE_SYNTHESIS_SPECIALIST, model: huggingface-projects/gemma-2-9b-it, focus: system architectures interfaces modularity}
+          - {role: MATERIAL_PROCESS_INVENTOR, model: huggingface-projects/llama-3.2-3B-Instruct, focus: materials processes manufacturing concepts}
+          - {role: ALGORITHM_INVENTOR, model: huggingface-projects/gemma-2-9b-it, focus: algorithms optimization representations}
+          - {role: SYSTEMS_INVENTOR, model: huggingface-projects/llama-3.2-3B-Instruct, focus: integrated system inventions}
+          - {role: SIMPLIFICATION_ENGINEER, model: huggingface-projects/gemma-2-9b-it, focus: remove complexity preserve capability}
+          - {role: FEASIBILITY_AUDITOR, model: huggingface-projects/llama-3.2-3B-Instruct, focus: physics engineering resource feasibility}
+          - {role: MANUFACTURABILITY_AUDITOR, model: huggingface-projects/gemma-2-9b-it, focus: fabrication supply chain maintainability}
+          - {role: VALUE_ECONOMICS_AUDITOR, model: huggingface-projects/llama-3.2-3B-Instruct, focus: value cost adoption economic constraints}
+          - {role: SAFETY_FAILURE_AUDITOR, model: huggingface-projects/gemma-2-9b-it, focus: hazards failure modes unintended consequences}
+          - {role: EXPERIMENT_DESIGNER, model: huggingface-projects/llama-3.2-3B-Instruct, focus: minimum decisive tests falsification}
+          - {role: NOVELTY_PRIOR_ART_STYLE_AUDITOR, model: huggingface-projects/gemma-2-9b-it, focus: conceptual novelty collision risks without legal claims}
+          - {role: DISCOVERY_HYPOTHESIS_GENERATOR, model: huggingface-projects/llama-3.2-3B-Instruct, focus: testable scientific discovery hypotheses}
+          - {role: RED_TEAM_INVENTION, model: huggingface-projects/gemma-2-9b-it, focus: destroy weak ideas expose hidden assumptions}
+          - {role: INDEPENDENT_REPLICATOR, model: huggingface-projects/llama-3.2-3B-Instruct, focus: independently reproduce reasoning and candidate ranking}
+          - {role: OMEGA_INVENTION_DISCOVERY_JUDGE, model: huggingface-projects/gemma-2-9b-it, focus: evidence bounded synthesis unresolved unknowns}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install Gradio client
+        run: pip install -q --upgrade gradio_client
       - name: Run real external model worker
         continue-on-error: true
         env:
           ROLE: ${{ matrix.role }}
           MODEL: ${{ matrix.model }}
           FOCUS: ${{ matrix.focus }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python worker/agent.py
       - uses: actions/upload-artifact@v4
         if: always()

@@ -19,14 +19,26 @@ Do not call simulations tests. Unknown remains unknown.
 Return a concise but technically useful report.
 """
 
-out = {"role": role, "model": model, "focus": focus, "inference_success": False}
+out = {
+    "role": role,
+    "model": model,
+    "focus": focus,
+    "inference_success": False,
+    "status": "EXTERNAL_INFERENCE_FAILED",
+}
+
 try:
-    c = Client(model)
-    ans = c.predict(prompt, api_name="/chat")
+    client = Client(model)
+    answer = client.predict(prompt, api_name="/chat")
+    if answer is None or (isinstance(answer, str) and not answer.strip()):
+        raise RuntimeError("External model returned an empty output")
     out["inference_success"] = True
-    out["output"] = ans
-except Exception as e:
-    out["error"] = repr(e)
+    out["status"] = "UNREVIEWED_EXTERNAL_AGENT_OUTPUT"
+    out["output"] = answer
+except Exception as exc:
+    out["error"] = repr(exc)
 
 Path("results").mkdir(exist_ok=True)
-Path(f"results/{role}.json").write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+Path(f"results/{role}.json").write_text(
+    json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8"
+)

@@ -41,8 +41,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install Gradio client
-        run: pip install -q --upgrade gradio_client
+      - name: Install adaptive Hugging Face runtime
+        run: pip install -q hf-gradio
       - name: Run real external model worker
         continue-on-error: true
         env:
